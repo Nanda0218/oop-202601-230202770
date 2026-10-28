@@ -2,6 +2,7 @@ package id.ac.upb.asetpinjam.denda;
 
 import id.ac.upb.asetpinjam.kontrak.AturanDenda;
 import id.ac.upb.asetpinjam.model.Aset;
+import java.math.BigInteger;
 
 /**
  * Minggu 5: denda yang makin berat bila makin lama terlambat.
@@ -13,6 +14,10 @@ public class DendaProgresif implements AturanDenda {
 
     @Override
     public long hitung(Aset aset, int hariTerlambat) {
-        throw new UnsupportedOperationException("TODO minggu 5: DendaProgresif.hitung");
+        long flat = aset.hitungDenda(hariTerlambat);
+        BigInteger faktor = BigInteger.valueOf(1L + hariTerlambat / 7);
+        BigInteger hasil = BigInteger.valueOf(flat).multiply(faktor);
+        BigInteger batasLong = BigInteger.valueOf(Long.MAX_VALUE);
+        return hasil.compareTo(batasLong) > 0 ? Long.MAX_VALUE : hasil.longValue();
     }
 }
