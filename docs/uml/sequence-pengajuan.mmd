@@ -1,0 +1,16 @@
+sequenceDiagram
+    actor Pemohon
+    participant Jadwal as JadwalPeminjaman
+    participant Baru as Peminjaman baru
+
+    Pemohon->>Baru: buat(id, peminjam, aset, mulai, selesai)
+    Note over Baru: Konstruktor memvalidasi data wajib dan selesai setelah mulai
+    Pemohon->>Jadwal: ajukan(Baru)
+    Jadwal->>Jadwal: bentrok(Baru)
+    alt Tidak bentrok
+        Jadwal->>Jadwal: periksa kuota laptop aktif
+        Jadwal->>Jadwal: tambah(Baru)
+        Jadwal-->>Pemohon: pengajuan tersimpan (DIAJUKAN)
+    else Bentrok pada aset dan waktu yang sama
+        Jadwal-->>Pemohon: PeminjamanBentrokException
+    end
