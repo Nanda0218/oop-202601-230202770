@@ -1,0 +1,33 @@
+@startuml
+title Sequence pengajuan peminjaman (kontrak Minggu 6; implementasi ajukan TODO)
+actor "Pemanggil" as Pemohon
+participant "Peminjaman" as Pinjam
+participant "JadwalPeminjaman" as Jadwal
+
+note over Pemohon, Jadwal
+  Peminjaman(...) sudah memvalidasi data wajib dan waktu selesai > mulai.
+  JadwalPeminjaman.ajukan() masih TODO Minggu 9, sehingga cabang di bawah
+  adalah perilaku yang diminta kontrak tugas, belum perilaku yang berjalan.
+end note
+
+Pemohon -> Pinjam: Peminjaman(id, peminjam, aset, mulai, selesai)
+activate Pinjam
+Pinjam -> Pinjam: validasi field dan rentang waktu
+Pinjam --> Pemohon: objek berstatus DIAJUKAN
+deactivate Pinjam
+
+Pemohon -> Jadwal: ajukan(peminjaman)
+activate Jadwal
+Jadwal -> Jadwal: bentrok(peminjaman) [TODO]
+alt tidak bentrok (sukses; TODO)
+  Jadwal -> Jadwal: tambah(peminjaman)
+  note right
+    tambah() berjalan dan menambahkan objek
+    tanpa pemeriksaan tambahan.
+  end note
+  Jadwal --> Pemohon: pengajuan tercatat [kontrak yang diharapkan]
+else bentrok (TODO)
+  Jadwal --> Pemohon: PeminjamanBentrokException [kontrak yang diharapkan]
+end
+deactivate Jadwal
+@enduml

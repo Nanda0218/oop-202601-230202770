@@ -1,0 +1,158 @@
+@startuml
+title Sistem Aset Pinjam — kelas domain dan kontrak inti (Minggu 6)
+skinparam packageStyle rectangle
+hide empty members
+
+package "id.ac.upb.asetpinjam.model" {
+  class Aset <<abstract>> {
+    - kode: String
+    - nama: String
+    - status: StatusAset = TERSEDIA
+    - kondisi: Kondisi = BAIK
+    + Aset(kode: String, nama: String)
+    + getKode(): String
+    + getNama(): String
+    + getStatus(): StatusAset
+    + getKondisi(): Kondisi
+    + setNama(nama: String): void
+    + setStatus(status: StatusAset): void
+    + setKondisi(kondisi: Kondisi): void
+    + bisaDipinjam(): boolean
+    + getJenis(): JenisAset
+    {abstract} + hitungDenda(hariTerlambat: int): long
+    # hitungDendaDenganPengali(hariTerlambat: int, pengali: int): long
+  }
+  class Laptop {
+    - spesifikasi: String
+    - nomorInventaris: String
+    + Laptop(kode: String, nama: String, spesifikasi: String, nomorInventaris: String)
+    + getSpesifikasi(): String
+    + getNomorInventaris(): String
+    + getJenis(): JenisAset
+    + hitungDenda(hariTerlambat: int): long
+  }
+  class Ruang {
+    - kapasitas: int
+    + Ruang(kode: String, nama: String, kapasitas: int)
+    + getKapasitas(): int
+    + getJenis(): JenisAset
+    + hitungDenda(hariTerlambat: int): long
+  }
+  class AlatLab {
+    - laboratorium: String
+    - tingkatRisiko: TingkatRisiko
+    + AlatLab(kode: String, nama: String, laboratorium: String, tingkatRisiko: TingkatRisiko)
+    + getLaboratorium(): String
+    + getTingkatRisiko(): TingkatRisiko
+    + getJenis(): JenisAset
+    + hitungDenda(hariTerlambat: int): long
+  }
+  class Peminjam <<record>> {
+    + id: String
+    + nama: String
+    + Peminjam(id: String, nama: String)
+  }
+  class Peminjaman {
+    - id: String
+    - peminjam: Peminjam
+    - aset: Aset
+    - mulai: LocalDateTime
+    - selesai: LocalDateTime
+    - status: StatusPeminjaman = DIAJUKAN
+    + Peminjaman(id: String, peminjam: Peminjam, aset: Aset, mulai: LocalDateTime, selesai: LocalDateTime)
+    + getId(): String
+    + getPeminjam(): Peminjam
+    + getAset(): Aset
+    + getMulai(): LocalDateTime
+    + getSelesai(): LocalDateTime
+    + getStatus(): StatusPeminjaman
+    + setStatusDariPenyimpanan(status: StatusPeminjaman): void
+    + ubahStatus(baru: StatusPeminjaman): void
+  }
+  enum JenisAset { LAPTOP; RUANG; ALAT_LAB }
+  enum StatusAset { TERSEDIA; DIPINJAM; PERBAIKAN }
+  enum Kondisi { BAIK; RUSAK_RINGAN; RUSAK_BERAT }
+  enum TingkatRisiko { RENDAH; SEDANG; TINGGI }
+  enum StatusPeminjaman { DIAJUKAN; DISETUJUI; DITOLAK; DIBATALKAN; DIPINJAM; TERLAMBAT; DIKEMBALIKAN }
+}
+
+package "id.ac.upb.asetpinjam.kontrak" {
+  interface DapatDipinjam {
+    + bisaDipinjam(): boolean
+  }
+  interface AturanDenda {
+    + hitung(aset: Aset, hariTerlambat: int): long
+  }
+}
+package "id.ac.upb.asetpinjam.jadwal" {
+  class JadwalPeminjaman {
+    - daftar: List<Peminjaman>
+    - kuotaLaptop: int
+    + JadwalPeminjaman(kuotaLaptop: int)
+    # kuotaLaptop(): int
+    # daftarMutable(): List<Peminjaman>
+    + tambah(p: Peminjaman): void
+    + bentrok(baru: Peminjaman): boolean
+    + semuaUrutMulai(): List<Peminjaman>
+    + perAset(): Map<String, List<Peminjaman>>
+    + hapus(id: String): boolean
+    + ajukan(baru: Peminjaman): void
+  }
+}
+package "id.ac.upb.asetpinjam.katalog" {
+  class KatalogAset {
+    - daftar: List<Aset>
+    + tambah(aset: Aset): void
+    + semua(): List<Aset>
+    + cari(kata: String): List<Aset>
+    + cari(kata: String, jenis: JenisAset): List<Aset>
+  }
+}
+package "id.ac.upb.asetpinjam.denda" {
+  class DendaFlat { + hitung(aset: Aset, hariTerlambat: int): long }
+  class DendaProgresif { + hitung(aset: Aset, hariTerlambat: int): long }
+  class LayananDenda {
+    - aturan: AturanDenda
+    + LayananDenda(aturan: AturanDenda)
+    + hitung(aset: Aset, hariTerlambat: int): long
+  }
+}
+package "id.ac.upb.asetpinjam.dao" {
+  interface AsetDAO {
+    + simpan(aset: Aset): void
+    + cariByKode(kode: String): Optional<Aset>
+    + semua(): List<Aset>
+    + perbarui(aset: Aset): void
+    + hapus(kode: String): boolean
+  }
+  interface PeminjamanDAO {
+    + simpan(peminjaman: Peminjaman): void
+    + cariById(id: String): Optional<Peminjaman>
+    + perbaruiStatus(id: String, status: StatusPeminjaman): boolean
+  }
+}
+
+DapatDipinjam <|.. Aset
+Aset <|-- Laptop
+Aset <|-- Ruang
+Aset <|-- AlatLab
+Peminjaman "0..*" --> "1" Peminjam : peminjam
+Peminjaman "0..*" --> "1" Aset : aset
+JadwalPeminjaman "1" o-- "0..*" Peminjaman : daftar
+KatalogAset "1" o-- "0..*" Aset : daftar
+AturanDenda <|.. DendaFlat
+AturanDenda <|.. DendaProgresif
+LayananDenda --> "1" AturanDenda : aturan
+AsetDAO ..> Aset
+PeminjamanDAO ..> Peminjaman
+
+note right of JadwalPeminjaman
+  Tanda tangan metode mengikuti kode.
+  bentrok(), semuaUrutMulai(), perAset(), hapus(),
+  dan ajukan() masih TODO pada implementasi saat ini.
+end note
+note bottom of LayananDenda
+  Implementasi strategi dan layanan masih TODO Minggu 10.
+  Diagram menunjukkan tipe dan tanda tangan yang sudah ada.
+end note
+@enduml
